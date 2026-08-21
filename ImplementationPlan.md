@@ -7,11 +7,11 @@ This plan breaks the build into **6 sequential Claude Code sessions ("sprints")*
 ## Locked-in decisions (do not re-litigate these in any sprint)
 
 - **Framework**: Next.js (App Router), deployed on Vercel.
-- **Database**: Postgres via Vercel Marketplace (Neon), provisioned in Sprint 1, connected via `@vercel/postgres` or `postgres.js`/`drizzle` (Sprint 1 picks the exact ORM/query layer and records it here).
+- **Database**: Postgres via Vercel Marketplace (Neon), provisioned in Sprint 1. Access layer: **Drizzle ORM** with the `@neondatabase/serverless` HTTP driver (`drizzle-orm/neon-http`), configured via `drizzle.config.ts` at the repo root and `src/lib/db/{index,schema}.ts`. Scripts: `npm run db:generate` / `db:push` / `db:studio`.
 - **Auth**: Google OAuth via Auth.js (NextAuth v5), domain-restricted sign-in. Auth.js Postgres adapter for session/user storage.
 - **Voice**: ElevenLabs Conversational AI, agent id `agent_1901m04h5x08ej7a91czykww6dne`, via `@elevenlabs/client` (or the ElevenLabs React SDK) on the client. A Next.js Route Handler mints a short-lived signed URL/conversation token server-side using an `ELEVENLABS_API_KEY` env var — **the API key must never be sent to or read by the browser.**
 - **Knowledge Base Status data**: mocked/seeded for v1 — no real external source integration. Seed data lives in the app (e.g. a seed script or static module) and is described further in Sprint 5.
-- **Styling**: Tailwind CSS, with the full color/typography/spacing token set from `designs/internal_project_voice_agent/DESIGN.md` front-matter ported into `tailwind.config.ts` (as theme extensions) and/or CSS custom properties in `globals.css`. Sprint 1 makes the final call on Tailwind-config-only vs. CSS-variables-plus-Tailwind and records it below — every later sprint must reuse those tokens/utility classes rather than inventing new colors or type scales.
+- **Styling**: Tailwind CSS **v4** (CSS-first config — `create-next-app` scaffolded v4, which has no `tailwind.config.ts`). Final call: all DESIGN.md front-matter tokens (colors, radius, spacing, type scale) are defined as CSS custom properties on `:root` in `src/app/globals.css`, then re-exposed to Tailwind via an `@theme inline` block so they generate real utility classes (e.g. `bg-primary-container`, `text-headline-md`, `rounded-xl`, `p-gutter`, `max-w-container-max`). Font-size tokens use v4's companion-variable convention (`--text-headline-md--line-height`, `--font-weight`, `--letter-spacing`) so a single class like `text-headline-md` carries the full type spec. Every later sprint must reuse these token classes rather than inventing new colors or a `tailwind.config.ts`.
 - **Design fidelity**: each screen-owning sprint should reference the matching `designs/<screen>/code.html` and `screen.png` directly for structure/spacing/copy, not just the written description in this plan.
 
 ## Sprint dependency graph
@@ -152,4 +152,29 @@ Sprints are drawn as a strict line because each one builds runnable code on top 
 **Handover notes for Sprint N+1**: ...
 ```
 
-(No sprints completed yet — this log is empty until Sprint 1 runs.)
+### Sprint 1 — complete — 2026-08-21
+
+**What was built**:
+- Scaffolded Next.js 16 (App Router, TypeScript, Turbopack) via `create-next-app` — scaffolded into a temp subdirectory (`nexus-hub-tmp`) then moved up into the repo root because `create-next-app` refuses a project name derived from a directory containing capital letters (`ElevenLabsRelease`); `package.json`'s `name` field set to `nexus-hub`.
+- Ported the full DESIGN.md token set (colors, radius, spacing, type scale) into `src/app/globals.css` as CSS custom properties + a Tailwind v4 `@theme inline` block — see the updated "Styling" decision above for the exact mechanism.
+- Google `Inter` font wired via `next/font/google`; Material Symbols Outlined loaded via a Google Fonts `<link>` in `src/app/layout.tsx` (needed for the icon set used throughout the designs — `dashboard`, `database`, `mic`, `hub`, etc.).
+- Built the static shell: `src/components/shell/{Sidebar,TopBar,AppShell}.tsx` — sidebar nav (Dashboard/Knowledge Base/Transcripts/Analytics/Settings + Help Center/Account footer + "New Voice Query" CTA), top bar (notifications, history, "Live Sync" pill). All nav links/buttons are non-functional placeholders this sprint (plain `<a href>`/`<button>`, no routing wiring, no click behavior) — that's intentional per scope.
+- Built the static Dashboard route at `src/app/dashboard/page.tsx` with the 3 Knowledge Base Status cards (`src/components/dashboard/KnowledgeBaseCard.tsx`, placeholder content matching the design exactly: Engineering & Sprints / Marketing & GTM / Executive Summary, all "Last updated: 10 mins ago") and the central mic button with the pulsing-ring CSS animation from the design's `code.html`. Root route `/` does a server-side `redirect("/dashboard")`.
+- Provisioned Postgres via `vercel integration add neon` (Vercel Marketplace) — project `nexus-hub` linked to Vercel scope `aravinds-projects-2c6db28a`, Neon resource `neon-byzantine-sail`. Confirmed all `DATABASE_URL`/`POSTGRES_*`/`PG*` env vars landed in Vercel (Production/Preview/Development) and pulled locally via `vercel env pull .env.local`.
+- Installed Drizzle ORM (`drizzle-orm`, `@neondatabase/serverless`, `drizzle-kit`), added `drizzle.config.ts` and `src/lib/db/{index,schema}.ts` (schema is an empty barrel — no tables yet, as scoped). Verified the DB connection end-to-end with `drizzle-kit push` against the live Neon instance (0 changes, as expected for an empty schema).
+- Deployed to Vercel: production build is live and smoke-tested at **https://nexus-hub-rosy.vercel.app** (`/dashboard` returns 200 with the correct page title).
+
+**Deviations from plan**: none functionally — the only deviation was the scaffold-into-temp-dir-then-move workaround required by `create-next-app`'s npm-name validation (repo directory name has capital letters). Worth noting for future sprints: while doing that move, `create-next-app`'s own generated `CLAUDE.md` (a one-line `@AGENTS.md` stub) briefly overwrote this project's real `CLAUDE.md` before it was caught and restored from conversation context — no data was actually lost, but future sprints should double check `CLAUDE.md` is still the project one (not the Next.js scaffold stub) if any similar scaffold/move operation is ever repeated.
+
+**Key decisions/choices made**:
+- DB access layer: Drizzle ORM + `@neondatabase/serverless` HTTP driver (`drizzle-orm/neon-http`) — see "Locked-in decisions" above.
+- Styling mechanism: CSS custom properties + Tailwind v4 `@theme inline` (no `tailwind.config.ts`, since the scaffolded Tailwind is v4) — see "Locked-in decisions" above.
+- Route naming for future sprints: `/dashboard` (built), and anticipated `/login` (Sprint 2), `/active-voice-query` or similar (Sprint 3), `/transcripts` (Sprint 5) — sidebar links already point at `/knowledge-base`, `/transcripts`, `/analytics`, `/settings`, `/help`, `/account` as placeholder hrefs for later sprints to fill in.
+- Vercel project/scope: `aravinds-projects-2c6db28a/nexus-hub`. Neon resource: `neon-byzantine-sail`.
+
+**Known issues / TODO carried forward**:
+- No `AUTH_SECRET` generated yet — that's Sprint 2's job alongside Auth.js setup.
+- Sidebar/top bar interactive elements (nav links, "New Voice Query" CTA, notification/history icons, mic button) are all visual-only placeholders with no routing or click handlers — Sprint 2 needs route protection + real nav; Sprint 3 wires the mic button to start a voice session.
+- No favicon set (removed the default Next.js one, haven't replaced it) — cosmetic, low priority, could bundle into Sprint 6's polish pass.
+
+**Handover notes for Sprint 2**: Auth.js + Google OAuth + Login screen. The provisioned Postgres DB (Neon) is ready for the Auth.js Postgres adapter — use the same Drizzle setup in `src/lib/db/` and add `users`/`accounts`/`sessions`/`verification_tokens` tables to `src/lib/db/schema.ts` (currently just an empty barrel export). The app shell (`src/components/shell/AppShell.tsx`, `Sidebar.tsx`, `TopBar.tsx`) is ready to be wrapped with real auth/session data — the Account footer item in `Sidebar.tsx` currently hardcodes "AB" initials as a placeholder; replace with the real signed-in user. Route protection middleware doesn't exist yet — `/dashboard` is currently open to anyone. Deployed preview: https://nexus-hub-rosy.vercel.app.
