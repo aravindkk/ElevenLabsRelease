@@ -212,3 +212,32 @@ body {
     opacity: 0;
   }
 }
+
+.waveform-bar {
+  animation: waveform 1s ease-in-out infinite alternate;
+}
+
+@keyframes waveform {
+  0% {
+    height: 20%;
+  }
+  100% {
+    height: 100%;
+  }
+}
+
+.delay-1 {
+  animation-delay: 0.1s;
+}
+.delay-2 {
+  animation-delay: 0.2s;
+}
+.delay-3 {
+  animation-delay: 0.3s;
+}
+.delay-4 {
+  animation-delay: 0.4s;
+}
+.delay-5 {
+  animation-delay: 0.5s;
+}

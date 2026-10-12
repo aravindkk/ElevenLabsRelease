@@ -1,28 +1,12 @@
+import Link from "next/link";
 import { AppShell } from "@/components/shell/AppShell";
 import { KnowledgeBaseCard } from "@/components/dashboard/KnowledgeBaseCard";
-
-const KB_SOURCES = [
-  {
-    icon: "engineering",
-    title: "Engineering & Sprints",
-    domainTag: "Engineering",
-    lastUpdated: "10 mins ago",
-  },
-  {
-    icon: "campaign",
-    title: "Marketing & GTM",
-    domainTag: "GTM",
-    lastUpdated: "10 mins ago",
-  },
-  {
-    icon: "summarize",
-    title: "Executive Summary",
-    domainTag: "Exec Summary",
-    lastUpdated: "10 mins ago",
-  },
-] as const;
+import { getKnowledgeBaseSources, formatRelativeTime, isStale } from "@/lib/kb-seed";
 
 export default function DashboardPage() {
+  const now = new Date();
+  const kbSources = getKnowledgeBaseSources(now);
+
   return (
     <AppShell activeHref="/dashboard">
       <div className="mb-stack-lg">
@@ -33,8 +17,15 @@ export default function DashboardPage() {
           System sources are active and indexing real-time data.
         </p>
         <div className="grid grid-cols-1 gap-gutter md:grid-cols-3">
-          {KB_SOURCES.map((source) => (
-            <KnowledgeBaseCard key={source.title} {...source} />
+          {kbSources.map((source) => (
+            <KnowledgeBaseCard
+              key={source.title}
+              icon={source.icon}
+              title={source.title}
+              domainTag={source.domainTag}
+              lastUpdated={formatRelativeTime(source.lastUpdatedAt, now)}
+              stale={isStale(source.lastUpdatedAt, now)}
+            />
           ))}
         </div>
       </div>
@@ -44,13 +35,13 @@ export default function DashboardPage() {
           <div className="pulse-ring absolute inset-0 rounded-full bg-secondary-container/20 transition-colors group-hover:bg-secondary-container/30" />
           <div className="pulse-ring-2 absolute inset-4 rounded-full bg-secondary-container/30 transition-colors group-hover:bg-secondary-container/40" />
           <div className="pulse-ring-3 absolute inset-8 rounded-full bg-secondary-container/40 transition-colors group-hover:bg-secondary-container/50" />
-          <button
-            type="button"
+          <Link
+            href="/voice"
             className="relative z-10 flex h-24 w-24 transform items-center justify-center rounded-full border-4 border-surface bg-secondary-container text-on-secondary-container shadow-lg transition-all duration-300 hover:scale-105 hover:bg-secondary"
             aria-label="Start a new voice query"
           >
             <span className="material-symbols-outlined text-[40px]">mic</span>
-          </button>
+          </Link>
         </div>
         <h3 className="mb-2 text-headline-sm text-text-primary">
           Tap to ask about project status

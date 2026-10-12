@@ -1,7 +1,22 @@
-export function TopBar() {
+import type { ReactNode } from "react";
+
+export function TopBar({
+  title,
+  search,
+}: {
+  title?: string;
+  search?: ReactNode;
+}) {
   return (
     <header className="sticky top-0 z-40 flex w-full items-center justify-between border-b border-outline-variant bg-surface px-6 py-3 text-primary shadow-sm">
-      <div className="flex flex-1 items-center" />
+      <div className="flex flex-1 items-center gap-6">
+        {title && (
+          <h1 className="text-headline-md font-bold text-text-primary">
+            {title}
+          </h1>
+        )}
+        {search}
+      </div>
       <div className="flex items-center gap-4">
         <button
           type="button"

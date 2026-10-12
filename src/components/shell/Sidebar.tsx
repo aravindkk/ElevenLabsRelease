@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { signOut } from "@/auth";
+
 const NAV_ITEMS = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard" },
   { label: "Knowledge Base", icon: "database", href: "/knowledge-base" },
@@ -6,7 +9,27 @@ const NAV_ITEMS = [
   { label: "Settings", icon: "settings", href: "/settings" },
 ] as const;
 
-export function Sidebar({ activeHref }: { activeHref: string }) {
+type SidebarUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
+
+function getInitials(user: SidebarUser | undefined) {
+  const source = user?.name ?? user?.email ?? "";
+  const parts = source.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+export function Sidebar({
+  activeHref,
+  user,
+}: {
+  activeHref: string;
+  user?: SidebarUser;
+}) {
   return (
     <nav className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-outline-variant bg-primary-container px-4 py-6">
       <div className="mb-8 flex items-center gap-3 px-2">
@@ -51,10 +74,13 @@ export function Sidebar({ activeHref }: { activeHref: string }) {
       </div>
 
       <div className="mb-6 mt-auto px-2">
-        <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary-container px-4 py-2.5 text-label-md font-semibold text-on-secondary-container shadow-sm transition-colors hover:bg-secondary">
+        <Link
+          href="/voice"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary-container px-4 py-2.5 text-label-md font-semibold text-on-secondary-container shadow-sm transition-colors hover:bg-secondary"
+        >
           <span className="material-symbols-outlined">mic</span>
           New Voice Query
-        </button>
+        </Link>
       </div>
 
       <div className="space-y-1 border-t border-outline-variant/30 pt-4">
@@ -69,11 +95,36 @@ export function Sidebar({ activeHref }: { activeHref: string }) {
           href="/account"
           className="group flex items-center gap-3 rounded-lg px-3 py-2 text-on-primary-container transition-colors duration-200 hover:bg-primary-fixed-variant hover:text-on-primary"
         >
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary-container text-[10px] font-bold text-on-secondary-container">
-            AB
-          </div>
-          <span className="text-label-md">Account</span>
+          {user?.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.image}
+              alt=""
+              className="h-6 w-6 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary-container text-[10px] font-bold text-on-secondary-container">
+              {getInitials(user)}
+            </div>
+          )}
+          <span className="truncate text-label-md">
+            {user?.name ?? user?.email ?? "Account"}
+          </span>
         </a>
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/login" });
+          }}
+        >
+          <button
+            type="submit"
+            className="group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-on-primary-container transition-colors duration-200 hover:bg-primary-fixed-variant hover:text-on-primary"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            <span className="text-label-md">Sign out</span>
+          </button>
+        </form>
       </div>
     </nav>
   );
